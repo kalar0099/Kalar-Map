@@ -267,7 +267,7 @@ export default function EditPlace() {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-bold">ژمارەی تەلەفۆن</FormLabel>
+                          <FormLabel className="text-base font-bold">ژمارەی تەلەفۆن <span className="text-muted-foreground font-normal text-sm">(ئیختیاری)</span></FormLabel>
                           <FormControl>
                             <Input placeholder="0750 000 0000" {...field} className="h-12 text-left" dir="ltr" />
                           </FormControl>
