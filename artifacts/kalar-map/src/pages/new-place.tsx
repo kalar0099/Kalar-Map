@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -25,16 +24,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, Plus, Trash2, Image as ImageIcon } from "lucide-react";
+import { Loader2, MapPin, Image as ImageIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { ImageUploader } from "@/components/image-uploader";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "ناوی ئینگلیزی پێویستە" }),
   nameKurdish: z.string().min(2, { message: "ناوی کوردی پێویستە" }),
   city: z.enum(["kalar", "kifre", "rizgari"] as const, { required_error: "شار هەڵبژێرە" }),
   category: z.enum([
-    "mosque", "school", "government", "hospital", "market", 
-    "university", "institute", "shop", "stadium", "park", 
+    "mosque", "school", "government", "hospital", "market",
+    "university", "institute", "shop", "stadium", "park",
     "cemetery", "hotel", "restaurant", "cafe", "recreation"
   ] as const, { required_error: "جۆر هەڵبژێرە" }),
   description: z.string().optional(),
@@ -43,13 +43,17 @@ const formSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180, { message: "هێڵی درێژی ڕاست نییە" }),
 });
 
+interface UploadedImage {
+  url: string;
+  objectPath: string;
+}
+
 export default function NewPlace() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const createPlace = useCreatePlace();
   const addImage = useAddPlaceImage();
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [currentImageUrl, setCurrentImageUrl] = useState("");
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,29 +67,8 @@ export default function NewPlace() {
     },
   });
 
-  function addImageUrl() {
-    if (currentImageUrl && currentImageUrl.trim() !== "") {
-      try {
-        new URL(currentImageUrl);
-        setImageUrls([...imageUrls, currentImageUrl]);
-        setCurrentImageUrl("");
-      } catch (e) {
-        toast({
-          title: "لینکی وێنە هەڵەیە",
-          description: "تکایە لینکێکی ڕاست بەکاربهێنە",
-          variant: "destructive",
-        });
-      }
-    }
-  }
-
-  function removeImageUrl(index: number) {
-    setImageUrls(imageUrls.filter((_, i) => i !== index));
-  }
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // 1. Create place
       const place = await createPlace.mutateAsync({
         data: {
           name: values.name,
@@ -99,12 +82,11 @@ export default function NewPlace() {
         }
       });
 
-      // 2. Add images if any
-      if (imageUrls.length > 0) {
-        for (const url of imageUrls) {
+      if (uploadedImages.length > 0) {
+        for (const img of uploadedImages) {
           await addImage.mutateAsync({
             id: place.id,
-            data: { url }
+            data: { url: img.url }
           });
         }
       }
@@ -145,13 +127,13 @@ export default function NewPlace() {
                           <FormItem>
                             <FormLabel className="text-base font-bold">ناوی شوێن (کوردی)</FormLabel>
                             <FormControl>
-                              <Input placeholder="نموونە: نەخۆشخانەی گشتی کەلار" {...field} className="h-12" />
+                              <Input placeholder="نموونە: نەخۆشخانەی گشتی کەلار" {...field} className="h-12" data-testid="input-name-kurdish" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="name"
@@ -159,7 +141,7 @@ export default function NewPlace() {
                           <FormItem>
                             <FormLabel className="text-base font-bold">ناوی شوێن (ئینگلیزی)</FormLabel>
                             <FormControl>
-                              <Input placeholder="Example: Kalar General Hospital" {...field} className="h-12 text-left" dir="ltr" />
+                              <Input placeholder="Example: Kalar General Hospital" {...field} className="h-12 text-left" dir="ltr" data-testid="input-name-english" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -176,7 +158,7 @@ export default function NewPlace() {
                             <FormLabel className="text-base font-bold">شار</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
-                                <SelectTrigger className="h-12">
+                                <SelectTrigger className="h-12" data-testid="select-city">
                                   <SelectValue placeholder="شار هەڵبژێرە" />
                                 </SelectTrigger>
                               </FormControl>
@@ -190,7 +172,7 @@ export default function NewPlace() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="category"
@@ -199,7 +181,7 @@ export default function NewPlace() {
                             <FormLabel className="text-base font-bold">جۆر</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
-                                <SelectTrigger className="h-12">
+                                <SelectTrigger className="h-12" data-testid="select-category">
                                   <SelectValue placeholder="جۆر هەڵبژێرە" />
                                 </SelectTrigger>
                               </FormControl>
@@ -222,10 +204,10 @@ export default function NewPlace() {
                         <FormItem>
                           <FormLabel className="text-base font-bold">زانیاری زیاتر</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              placeholder="هەر زانیارییەکی تر کە بەسوود بێت..." 
-                              className="min-h-[100px] resize-none" 
-                              {...field} 
+                            <Textarea
+                              placeholder="هەر زانیارییەکی تر کە بەسوود بێت..."
+                              className="min-h-[100px] resize-none"
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -240,7 +222,7 @@ export default function NewPlace() {
                         <FormItem>
                           <FormLabel className="text-base font-bold">ژمارەی تەلەفۆن</FormLabel>
                           <FormControl>
-                            <Input placeholder="0750 000 0000" {...field} className="h-12 text-left" dir="ltr" />
+                            <Input placeholder="0750 000 0000" {...field} className="h-12 text-left" dir="ltr" data-testid="input-phone" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -260,7 +242,7 @@ export default function NewPlace() {
                             <FormItem>
                               <FormLabel>هێڵی پانی (Latitude)</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} className="text-left" dir="ltr" />
+                                <Input type="number" step="any" {...field} className="text-left" dir="ltr" data-testid="input-latitude" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -273,7 +255,7 @@ export default function NewPlace() {
                             <FormItem>
                               <FormLabel>هێڵی درێژی (Longitude)</FormLabel>
                               <FormControl>
-                                <Input type="number" step="any" {...field} className="text-left" dir="ltr" />
+                                <Input type="number" step="any" {...field} className="text-left" dir="ltr" data-testid="input-longitude" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -282,10 +264,11 @@ export default function NewPlace() {
                       </div>
                     </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full h-14 text-lg font-bold" 
+                    <Button
+                      type="submit"
+                      className="w-full h-14 text-lg font-bold"
                       disabled={createPlace.isPending || addImage.isPending}
+                      data-testid="button-submit"
                     >
                       {(createPlace.isPending || addImage.isPending) ? (
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -305,56 +288,10 @@ export default function NewPlace() {
                   <ImageIcon size={20} className="text-primary" />
                   وێنەکان
                 </h3>
-                
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input 
-                      placeholder="لینک (URL)ـی وێنە..." 
-                      value={currentImageUrl}
-                      onChange={(e) => setCurrentImageUrl(e.target.value)}
-                      className="text-left"
-                      dir="ltr"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addImageUrl();
-                        }
-                      }}
-                    />
-                    <Button type="button" onClick={addImageUrl} size="icon" className="shrink-0">
-                      <Plus size={18} />
-                    </Button>
-                  </div>
-                  
-                  {imageUrls.length === 0 ? (
-                    <div className="text-center p-6 border-2 border-dashed rounded-xl border-border/50 text-muted-foreground">
-                      <ImageIcon size={32} className="mx-auto mb-2 opacity-20" />
-                      <p className="text-sm">هیچ وێنەیەک زیاد نەکراوە</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {imageUrls.map((url, i) => (
-                        <div key={i} className="relative group rounded-lg overflow-hidden border border-border">
-                          <div className="aspect-video bg-muted relative">
-                            <img src={url} alt="" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Button 
-                                type="button" 
-                                variant="destructive" 
-                                size="sm" 
-                                onClick={() => removeImageUrl(i)}
-                                className="h-8"
-                              >
-                                <Trash2 size={14} className="mr-1" />
-                                سڕینەوە
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <ImageUploader
+                  images={uploadedImages}
+                  onImagesChange={setUploadedImages}
+                />
               </CardContent>
             </Card>
           </div>

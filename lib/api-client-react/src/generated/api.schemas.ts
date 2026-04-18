@@ -146,6 +146,21 @@ export interface AddImageBody {
   caption?: string | null;
 }
 
+export interface UploadUrlRequest {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
+export interface ErrorEnvelope {
+  error: string;
+}
+
 export type PlaceStatsByCity = { [key: string]: number };
 
 export type PlaceStatsByCategory = { [key: string]: number };

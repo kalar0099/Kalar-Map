@@ -3,11 +3,11 @@ import { useRoute, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { 
-  useGetPlace, 
-  useUpdatePlace, 
-  UpdatePlaceBodyCity, 
-  UpdatePlaceBodyCategory, 
+import {
+  useGetPlace,
+  useUpdatePlace,
+  UpdatePlaceBodyCity,
+  UpdatePlaceBodyCategory,
   useAddPlaceImage,
   useDeletePlaceImage
 } from "@workspace/api-client-react";
@@ -31,17 +31,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MapPin, Plus, Trash2, Image as ImageIcon, ArrowRight } from "lucide-react";
+import { Loader2, MapPin, Trash2, Image as ImageIcon, ArrowRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "wouter";
+import { ImageUploader } from "@/components/image-uploader";
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "ناوی ئینگلیزی پێویستە" }),
   nameKurdish: z.string().min(2, { message: "ناوی کوردی پێویستە" }),
   city: z.enum(["kalar", "kifre", "rizgari"] as const, { required_error: "شار هەڵبژێرە" }),
   category: z.enum([
-    "mosque", "school", "government", "hospital", "market", 
-    "university", "institute", "shop", "stadium", "park", 
+    "mosque", "school", "government", "hospital", "market",
+    "university", "institute", "shop", "stadium", "park",
     "cemetery", "hotel", "restaurant", "cafe", "recreation"
   ] as const, { required_error: "جۆر هەڵبژێرە" }),
   description: z.string().optional(),
@@ -50,12 +51,17 @@ const formSchema = z.object({
   longitude: z.coerce.number().min(-180).max(180, { message: "هێڵی درێژی ڕاست نییە" }),
 });
 
+interface UploadedImage {
+  url: string;
+  objectPath: string;
+}
+
 export default function EditPlace() {
   const [, params] = useRoute("/places/:id/edit");
   const id = params?.id ? parseInt(params.id, 10) : 0;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   const { data: place, isLoading } = useGetPlace(id, {
     query: { enabled: !!id, queryKey: ["/api/places", id] }
   });
@@ -63,9 +69,8 @@ export default function EditPlace() {
   const updatePlace = useUpdatePlace();
   const addImage = useAddPlaceImage();
   const deleteImage = useDeletePlaceImage();
-  
-  const [newImageUrls, setNewImageUrls] = useState<string[]>([]);
-  const [currentImageUrl, setCurrentImageUrl] = useState("");
+
+  const [newImages, setNewImages] = useState<UploadedImage[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -94,46 +99,17 @@ export default function EditPlace() {
     }
   }, [place, form]);
 
-  function addImageUrl() {
-    if (currentImageUrl && currentImageUrl.trim() !== "") {
-      try {
-        new URL(currentImageUrl);
-        setNewImageUrls([...newImageUrls, currentImageUrl]);
-        setCurrentImageUrl("");
-      } catch (e) {
-        toast({
-          title: "لینکی وێنە هەڵەیە",
-          description: "تکایە لینکێکی ڕاست بەکاربهێنە",
-          variant: "destructive",
-        });
-      }
-    }
-  }
-
-  function removeNewImageUrl(index: number) {
-    setNewImageUrls(newImageUrls.filter((_, i) => i !== index));
-  }
-
   async function handleDeleteExistingImage(imageId: number) {
     try {
       await deleteImage.mutateAsync({ id, imageId });
-      toast({
-        title: "سەرکەوتوو بوو",
-        description: "وێنەکە سڕدرایەوە",
-      });
-      // Invalidate place query to refetch images
+      toast({ title: "سەرکەوتوو بوو", description: "وێنەکە سڕدرایەوە" });
     } catch (e) {
-      toast({
-        title: "هەڵەیەک ڕوویدا",
-        description: "نەتوانرا وێنەکە بسڕێتەوە",
-        variant: "destructive"
-      });
+      toast({ title: "هەڵەیەک ڕوویدا", description: "نەتوانرا وێنەکە بسڕێتەوە", variant: "destructive" });
     }
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // 1. Update place
       await updatePlace.mutateAsync({
         id,
         data: {
@@ -148,27 +124,16 @@ export default function EditPlace() {
         }
       });
 
-      // 2. Add new images if any
-      if (newImageUrls.length > 0) {
-        for (const url of newImageUrls) {
-          await addImage.mutateAsync({
-            id,
-            data: { url }
-          });
+      if (newImages.length > 0) {
+        for (const img of newImages) {
+          await addImage.mutateAsync({ id, data: { url: img.url } });
         }
       }
 
-      toast({
-        title: "سەرکەوتوو بوو",
-        description: "گۆڕانکارییەکان بە سەرکەوتوویی پاشەکەوت کران",
-      });
+      toast({ title: "سەرکەوتوو بوو", description: "گۆڕانکارییەکان بە سەرکەوتوویی پاشەکەوت کران" });
       setLocation(`/places/${id}`);
     } catch (error) {
-      toast({
-        title: "هەڵەیەک ڕوویدا",
-        description: "تکایە دووبارە هەوڵبدەرەوە",
-        variant: "destructive",
-      });
+      toast({ title: "هەڵەیەک ڕوویدا", description: "تکایە دووبارە هەوڵبدەرەوە", variant: "destructive" });
     }
   }
 
@@ -221,7 +186,6 @@ export default function EditPlace() {
                           </FormItem>
                         )}
                       />
-                      
                       <FormField
                         control={form.control}
                         name="name"
@@ -244,7 +208,7 @@ export default function EditPlace() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-base font-bold">شار</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger className="h-12">
                                   <SelectValue placeholder="شار هەڵبژێرە" />
@@ -260,14 +224,13 @@ export default function EditPlace() {
                           </FormItem>
                         )}
                       />
-                      
                       <FormField
                         control={form.control}
                         name="category"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-base font-bold">جۆر</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger className="h-12">
                                   <SelectValue placeholder="جۆر هەڵبژێرە" />
@@ -292,11 +255,7 @@ export default function EditPlace() {
                         <FormItem>
                           <FormLabel className="text-base font-bold">زانیاری زیاتر</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              placeholder="هەر زانیارییەکی تر کە بەسوود بێت..." 
-                              className="min-h-[100px] resize-none" 
-                              {...field} 
-                            />
+                            <Textarea placeholder="هەر زانیارییەکی تر کە بەسوود بێت..." className="min-h-[100px] resize-none" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -352,9 +311,9 @@ export default function EditPlace() {
                       </div>
                     </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full h-14 text-lg font-bold" 
+                    <Button
+                      type="submit"
+                      className="w-full h-14 text-lg font-bold"
                       disabled={updatePlace.isPending || addImage.isPending}
                     >
                       {(updatePlace.isPending || addImage.isPending) ? (
@@ -370,87 +329,47 @@ export default function EditPlace() {
 
           <div className="lg:col-span-1">
             <Card className="border-none shadow-md sticky top-6">
-              <CardContent className="p-6">
-                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                  <ImageIcon size={20} className="text-primary" />
-                  وێنەکان
-                </h3>
-                
-                <div className="space-y-6">
-                  {/* Existing Images */}
-                  {place.images && place.images.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="font-semibold text-sm text-muted-foreground">وێنەکانی ئێستا</h4>
-                      {place.images.map((img) => (
-                        <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border">
-                          <div className="aspect-video bg-muted relative">
-                            <img src={img.url} alt="" className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <Button 
-                                type="button" 
-                                variant="destructive" 
-                                size="sm" 
-                                onClick={() => handleDeleteExistingImage(img.id)}
-                                className="h-8"
-                                disabled={deleteImage.isPending}
-                              >
-                                {deleteImage.isPending ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Trash2 size={14} className="mr-1" />}
-                                سڕینەوە
-                              </Button>
-                            </div>
+              <CardContent className="p-6 space-y-6">
+                {/* Existing Images */}
+                {place.images && place.images.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-bold text-base flex items-center gap-2">
+                      <ImageIcon size={18} className="text-primary" />
+                      وێنەکانی ئێستا
+                    </h3>
+                    {place.images.map((img) => (
+                      <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border">
+                        <div className="aspect-video bg-muted relative">
+                          <img src={img.url} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteExistingImage(img.id)}
+                              className="h-8"
+                              disabled={deleteImage.isPending}
+                            >
+                              {deleteImage.isPending ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Trash2 size={14} className="mr-1" />}
+                              سڕینەوە
+                            </Button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* New Images */}
-                  <div className="space-y-3 pt-4 border-t border-border">
-                    <h4 className="font-semibold text-sm text-muted-foreground">زیادکردنی وێنەی نوێ</h4>
-                    <div className="flex gap-2">
-                      <Input 
-                        placeholder="لینک (URL)ـی وێنە..." 
-                        value={currentImageUrl}
-                        onChange={(e) => setCurrentImageUrl(e.target.value)}
-                        className="text-left"
-                        dir="ltr"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addImageUrl();
-                          }
-                        }}
-                      />
-                      <Button type="button" onClick={addImageUrl} size="icon" className="shrink-0">
-                        <Plus size={18} />
-                      </Button>
-                    </div>
-                    
-                    {newImageUrls.length > 0 && (
-                      <div className="space-y-3 mt-4">
-                        {newImageUrls.map((url, i) => (
-                          <div key={i} className="relative group rounded-lg overflow-hidden border border-primary">
-                            <div className="aspect-video bg-muted relative">
-                              <img src={url} alt="" className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <Button 
-                                  type="button" 
-                                  variant="destructive" 
-                                  size="sm" 
-                                  onClick={() => removeNewImageUrl(i)}
-                                  className="h-8"
-                                >
-                                  <Trash2 size={14} className="mr-1" />
-                                  لابردن
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
                       </div>
-                    )}
+                    ))}
                   </div>
+                )}
 
+                {/* New Images Upload */}
+                <div className="space-y-3 pt-4 border-t border-border">
+                  <h3 className="font-bold text-base flex items-center gap-2">
+                    <ImageIcon size={18} className="text-primary" />
+                    زیادکردنی وێنەی نوێ
+                  </h3>
+                  <ImageUploader
+                    images={newImages}
+                    onImagesChange={setNewImages}
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -51,9 +51,6 @@ export function Layout({ children }: LayoutProps) {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border/50 text-center text-xs text-muted-foreground">
-          دروستکراوە بە خۆشەویستییەوە
-        </div>
       </aside>
 
       {/* Main Content */}
