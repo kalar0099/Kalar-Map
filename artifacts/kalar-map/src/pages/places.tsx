@@ -30,7 +30,7 @@ export default function Places() {
         <div className="max-w-6xl mx-auto relative z-10 text-center">
           <h1 className="text-4xl font-bold mb-4 font-sans tracking-tight">هەموو شوێنەکان</h1>
           <p className="text-primary-foreground/80 max-w-xl mx-auto text-lg">
-            گەڕان بکە بەناو {stats?.totalPlaces || "..."} شوێنی تۆمارکراو لە کەلار، کفری و ریزگاری
+            گەڕان بکە بەناو {stats?.totalPlaces || "..."} شوێنی تۆمارکراو لە کەلار، کفری و رزگاری
           </p>
         </div>
       </div>

@@ -9,7 +9,7 @@ import { PlaceCategory, PlaceCity } from "@workspace/api-client-react";
 export const CITY_LABELS: Record<PlaceCity, string> = {
   kalar: "کەلار",
   kifre: "کفری",
-  rizgari: "ریزگاری"
+  rizgari: "رزگاری"
 };
 
 export const CATEGORY_LABELS: Record<PlaceCategory, string> = {

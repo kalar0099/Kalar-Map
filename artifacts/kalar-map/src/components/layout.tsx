@@ -26,7 +26,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
           <div>
             <h1 className="font-bold text-lg text-primary tracking-wide">نەخشەی کەلار</h1>
-            <p className="text-xs text-muted-foreground">کەلار، کفری، ریزگاری</p>
+            <p className="text-xs text-muted-foreground">کەلار، کفری، رزگاری</p>
           </div>
         </div>
 
