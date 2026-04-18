@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for Kalar Map
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: places
+    description: Place management operations
+  - name: cities
+    description: City information
 paths:
   /healthz:
     get:
@@ -24,6 +28,172 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /places:
+    get:
+      operationId: listPlaces
+      tags: [places]
+      summary: List all places
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+            enum: [kalar, kifre, rizgari]
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [mosque, school, government, hospital, market, university, institute, shop, stadium, park, cemetery, hotel, restaurant, cafe, recreation]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of places
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Place"
+
+    post:
+      operationId: createPlace
+      tags: [places]
+      summary: Create a new place
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlaceBody"
+      responses:
+        "201":
+          description: Place created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Place"
+
+  /places/{id}:
+    get:
+      operationId: getPlace
+      tags: [places]
+      summary: Get a place by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Place found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Place"
+        "404":
+          description: Place not found
+
+    put:
+      operationId: updatePlace
+      tags: [places]
+      summary: Update a place
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlaceBody"
+      responses:
+        "200":
+          description: Place updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Place"
+
+    delete:
+      operationId: deletePlace
+      tags: [places]
+      summary: Delete a place
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Place deleted
+
+  /places/{id}/images:
+    post:
+      operationId: addPlaceImage
+      tags: [places]
+      summary: Add an image to a place
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddImageBody"
+      responses:
+        "201":
+          description: Image added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaceImage"
+
+  /places/{id}/images/{imageId}:
+    delete:
+      operationId: deletePlaceImage
+      tags: [places]
+      summary: Delete a place image
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: imageId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Image deleted
+
+  /places/stats/summary:
+    get:
+      operationId: getPlaceStats
+      tags: [places]
+      summary: Get place statistics by city and category
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaceStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +204,148 @@ components:
       required:
         - status
 
+    Place:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        nameKurdish:
+          type: string
+        city:
+          type: string
+          enum: [kalar, kifre, rizgari]
+        category:
+          type: string
+          enum: [mosque, school, government, hospital, market, university, institute, shop, stadium, park, cemetery, hotel, restaurant, cafe, recreation]
+        description:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+        longitude:
+          type: number
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlaceImage"
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - nameKurdish
+        - city
+        - category
+        - latitude
+        - longitude
+        - images
+        - createdAt
+
+    PlaceImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        placeId:
+          type: integer
+        url:
+          type: string
+        caption:
+          type: string
+          nullable: true
+      required:
+        - id
+        - placeId
+        - url
+
+    CreatePlaceBody:
+      type: object
+      properties:
+        name:
+          type: string
+        nameKurdish:
+          type: string
+        city:
+          type: string
+          enum: [kalar, kifre, rizgari]
+        category:
+          type: string
+          enum: [mosque, school, government, hospital, market, university, institute, shop, stadium, park, cemetery, hotel, restaurant, cafe, recreation]
+        description:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+        longitude:
+          type: number
+        imageUrl:
+          type: string
+          nullable: true
+      required:
+        - name
+        - nameKurdish
+        - city
+        - category
+        - latitude
+        - longitude
+
+    UpdatePlaceBody:
+      type: object
+      properties:
+        name:
+          type: string
+        nameKurdish:
+          type: string
+        city:
+          type: string
+          enum: [kalar, kifre, rizgari]
+        category:
+          type: string
+          enum: [mosque, school, government, hospital, market, university, institute, shop, stadium, park, cemetery, hotel, restaurant, cafe, recreation]
+        description:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    AddImageBody:
+      type: object
+      properties:
+        url:
+          type: string
+        caption:
+          type: string
+          nullable: true
+      required:
+        - url
+
+    PlaceStats:
+      type: object
+      properties:
+        totalPlaces:
+          type: integer
+        byCity:
+          type: object
+          additionalProperties:
+            type: integer
+        byCategory:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+        - totalPlaces
+        - byCity
+        - byCategory

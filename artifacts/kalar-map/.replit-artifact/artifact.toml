@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "نەخشەی کەلار، کفری و ریزگاری"
+version = "1.0.0"
+id = "artifacts/kalar-map"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23584
+
+[services.development]
+run = "pnpm --filter @workspace/kalar-map run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kalar-map", "run", "build" ]
+publicDir = "artifacts/kalar-map/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23584"
+BASE_PATH = "/"
