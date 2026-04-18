@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { pool } from "@workspace/db";
 
 const rawPort = process.env["PORT"];
 
@@ -15,11 +16,50 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
+async function migrate() {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS places (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        name_kurdish TEXT NOT NULL,
+        city TEXT NOT NULL,
+        category TEXT NOT NULL,
+        description TEXT,
+        phone TEXT,
+        latitude DOUBLE PRECISION NOT NULL,
+        longitude DOUBLE PRECISION NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL
+      );
 
-  logger.info({ port }, "Server listening");
-});
+      CREATE TABLE IF NOT EXISTS place_images (
+        id SERIAL PRIMARY KEY,
+        place_id INTEGER NOT NULL REFERENCES places(id) ON DELETE CASCADE,
+        url TEXT NOT NULL,
+        caption TEXT
+      );
+    `);
+    logger.info("Database migration completed");
+  } catch (err) {
+    logger.error({ err }, "Database migration failed");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+migrate()
+  .then(() => {
+    app.listen(port, (err) => {
+      if (err) {
+        logger.error({ err }, "Error listening on port");
+        process.exit(1);
+      }
+      logger.info({ port }, "Server listening");
+    });
+  })
+  .catch((err) => {
+    logger.error({ err }, "Startup failed");
+    process.exit(1);
+  });
