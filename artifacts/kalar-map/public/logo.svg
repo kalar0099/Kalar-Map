@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <circle cx="60" cy="60" r="56" fill="#1a6b4a" />
+  <circle cx="60" cy="60" r="44" fill="#1e7d57" />
+  <!-- Map pin -->
+  <path d="M60 30 C46 30 36 41 36 54 C36 68 60 90 60 90 C60 90 84 68 84 54 C84 41 74 30 60 30 Z" fill="white" opacity="0.95"/>
+  <circle cx="60" cy="54" r="10" fill="#1a6b4a"/>
+  <!-- compass rose tiny lines -->
+  <line x1="60" y1="36" x2="60" y2="40" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+</svg>
