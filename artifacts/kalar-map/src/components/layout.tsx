@@ -1,8 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Map, List, PlusCircle, Compass, LogIn, LogOut, User } from "lucide-react";
+import { Map, List, PlusCircle, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useClerk, useUser, Show } from "@clerk/react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,12 +9,11 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
-  const { signOut } = useClerk();
-  const { user } = useUser();
 
   const navItems = [
     { href: "/", label: "نەخشە", icon: Map },
     { href: "/places", label: "شوێنەکان", icon: List },
+    { href: "/places/new", label: "شوێنی نوێ", icon: PlusCircle },
   ];
 
   return (
@@ -51,49 +49,7 @@ export function Layout({ children }: LayoutProps) {
               </Link>
             );
           })}
-
-          {/* Add new place — only for signed-in users */}
-          <Show when="signed-in">
-            <Link href="/places/new">
-              <span className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-md transition-all cursor-pointer font-medium",
-                location === "/places/new"
-                  ? "bg-primary/10 text-primary"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}>
-                <PlusCircle size={20} className={location === "/places/new" ? "text-primary" : "text-muted-foreground"} />
-                شوێنی نوێ
-              </span>
-            </Link>
-          </Show>
         </nav>
-
-        {/* User section at bottom */}
-        <div className="px-4 py-4 border-t border-border">
-          <Show when="signed-in">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground">
-                <User size={16} />
-                <span className="truncate">{user?.primaryEmailAddress?.emailAddress}</span>
-              </div>
-              <button
-                onClick={() => signOut()}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-md transition-all cursor-pointer font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              >
-                <LogOut size={20} className="text-muted-foreground" />
-                دەرچوون
-              </button>
-            </div>
-          </Show>
-          <Show when="signed-out">
-            <Link href="/sign-in">
-              <span className="flex items-center gap-3 px-4 py-3 rounded-md transition-all cursor-pointer font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-                <LogIn size={20} className="text-muted-foreground" />
-                چوونەژوورەوە
-              </span>
-            </Link>
-          </Show>
-        </div>
       </aside>
 
       {/* Main Content */}

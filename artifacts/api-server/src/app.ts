@@ -3,8 +3,6 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import path from "path";
 import { existsSync } from "fs";
-import { clerkMiddleware } from "@clerk/express";
-import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -30,14 +28,9 @@ app.use(
   }),
 );
 
-// Clerk proxy must come before body parsers
-app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
-
-app.use(cors({ credentials: true, origin: true }));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.use(clerkMiddleware());
 
 app.use("/api", router);
 
