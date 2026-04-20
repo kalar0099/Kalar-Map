@@ -6,3 +6,9 @@ id = "7DtTq1JLOEyrRxPkPo4NJ"
 uri = "file://kalar-map-source.tar.gz"
 type = "unspecified"
 title = "کۆدی سایتی نەخشەی کەلار"
+
+[[outputs]]
+id = "11jTFFoDLYUHQ2AQh4CDn"
+uri = "file://artifacts/kalar-map/public/logo.svg"
+type = "image"
+title = "لۆگۆی نەخشەی کەلار"
